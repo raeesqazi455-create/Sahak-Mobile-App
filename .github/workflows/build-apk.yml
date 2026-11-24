@@ -1,0 +1,44 @@
+
+name: Build Sahak Mobile APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Android project
+        run: |
+          mkdir android-project
+          unzip -q SahakMobile_Android_Project.zip -d android-project
+
+      - name: Build APK
+        run: |
+          GRADLE_FILE=$(find android-project -name gradlew -type f | head -n 1)
+          if [ -z "$GRADLE_FILE" ]; then
+            echo "Gradle wrapper not found"
+            exit 1
+          fi
+          cd "$(dirname "$GRADLE_FILE")"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sahak-Mobile-APK
+          path: android-project/**/build/outputs/apk/debug/*.apk
